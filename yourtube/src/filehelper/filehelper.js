@@ -1,0 +1,38 @@
+"use strict";
+
+import multer from "multer";
+import fs from "fs";
+
+if (!fs.existsSync("uploads")) {
+  fs.mkdirSync("uploads", { recursive: true });
+}
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, "uploads");
+  },
+
+  filename: (req, file, cb) => {
+    cb(
+      null,
+      new Date().toISOString().replace(/:/g, "-") +
+        "-" +
+        file.originalname
+    );
+  },
+});
+
+const fileFilter = (req, file, cb) => {
+  if (file.mimetype.startsWith("video/")) {
+    cb(null, true);
+  } else {
+    cb(new Error("Only video files are allowed"), false);
+  }
+};
+
+const upload = multer({
+  storage,
+  fileFilter,
+});
+
+export default upload;
