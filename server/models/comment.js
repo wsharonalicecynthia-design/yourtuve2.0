@@ -2,25 +2,59 @@ import mongoose from "mongoose";
 
 const commentSchema = new mongoose.Schema(
   {
-    userid: {
+    viewer: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "user",
+      ref: "Auth",
       required: true,
     },
+
     videoid: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "videofiles",
+      ref: "Video",
       required: true,
     },
-    commentbody: { type: String, required: true },
-    usercommented: { type: String, required: true },
-    commentedon: { type: Date, default: Date.now },
+
+    comment: {
+      type: String,
+      required: true,
+      trim: true,
+      maxlength: 500,
+    },
+
+    city: {
+      type: String,
+      default: "",
+    },
+
+    language: {
+      type: String,
+      default: "en",
+    },
+
+    likes: {
+      type: [
+        mongoose.Schema.Types.ObjectId,
+      ],
+      default: [],
+    },
+
+    dislikes: {
+      type: [
+        mongoose.Schema.Types.ObjectId,
+      ],
+      default: [],
+    },
   },
   {
     timestamps: true,
   }
 );
 
-// Exporting as 'Comment' to match standard naming conventions
-export default mongoose.model("Comment", commentSchema);
+const Comment =
+  mongoose.models.Comment ||
+  mongoose.model(
+    "Comment",
+    commentSchema
+  );
 
+export default Comment;

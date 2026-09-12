@@ -1,13 +1,31 @@
 import mongoose from "mongoose";
 
-const historySchema = new mongoose.Schema({
-  // Use ObjectId to link to the User model
-  viewer: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
-  
-  // FIX: Changed 'videoId' to 'videoid' to match your other controllers
-  videoid: { type: mongoose.Schema.Types.ObjectId, ref: "Video", required: true },
-  
-  watchedon: { type: Date, default: Date.now }
-});
+const historySchema = new mongoose.Schema(
+  {
+    viewer: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Auth",
+      required: true,
+    },
 
-export default mongoose.model("History", historySchema);
+    videoid: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Video",
+      required: true,
+    },
+
+    watchedon: {
+      type: Date,
+      default: Date.now,
+    },
+  },
+  {
+    timestamps: true,
+  }
+);
+
+const History =
+  mongoose.models.History ||
+  mongoose.model("History", historySchema);
+
+export default History;

@@ -4,13 +4,23 @@ import React, { useState, useEffect } from "react";
 interface Video {
   _id: string;
   videotitle: string;
-  videochannel: string;
-  views: number;
   filename: string;
-  // ... other fields
+  filetype: string;
+  filepath: string;
+  filesize: string;
+  videochannel: string;
+  Like: number;
+  views: number;
+  uploader: string;
+  createdAt: string;
 }
-const SearchResult: React.FC<{ query: string }> = ({ query }) => {
-  const [video, setvideos] = useState<Video[] | null>(null);
+
+interface SearchResultProps {
+  query: string;
+}
+
+function SearchResult({ query }: SearchResultProps) {
+  const [videos, setVideos] = useState<Video[] | null>(null);
 
   const fetchVideos = async () => {
     const allVideos = [
@@ -43,23 +53,22 @@ const SearchResult: React.FC<{ query: string }> = ({ query }) => {
     ];
 
     let results = allVideos.filter(
-      (vid) =>
-        vid.videotitle.toLowerCase().includes(query.toLowerCase()) ||
+      (vid) => vid.videotitle.toLowerCase().includes(query.toLowerCase()) ||
         vid.videochannel.toLowerCase().includes(query.toLowerCase())
     );
-    setvideos(results);
+    setVideos(results);
   };
 
   useEffect(() => {
     fetchVideos();
   }, [query]);
 
-  if (!video) return <div className="text-gray-500">Loading results...</div>;
-  if (video.length === 0) return <div className="py-8 text-gray-500">No videos found.</div>;
+  if (!videos) return <div className="text-gray-500">Loading results...</div>;
+  if (videos.length === 0) return <div className="py-8 text-gray-500">No videos found.</div>;
 
   return (
     <div className="grid grid-cols-1 gap-4 mt-4 max-w-4xl">
-      {video.map((vid) => (
+      {videos.map((vid) => (
         <div key={vid._id} className="p-4 border rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer text-black">
           <h3 className="font-semibold text-lg">{vid.videotitle}</h3>
           <p className="text-sm text-gray-600">{vid.videochannel}</p>
@@ -68,6 +77,6 @@ const SearchResult: React.FC<{ query: string }> = ({ query }) => {
       ))}
     </div>
   );
-};
+}
 
 export default SearchResult;

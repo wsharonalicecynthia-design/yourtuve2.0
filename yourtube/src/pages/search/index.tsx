@@ -1,28 +1,33 @@
-import { useRouter } from "next/router";
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useEffect, useState } from "react";
+import Link from "next/link";
 import axiosInstance from "@/lib/axiosInstance";
 
-const SearchPage = () => {
-  const router = useRouter();
-  const { q } = router.query;
+type Video = {
+  _id: string;
+  filename: string;
+  filepath?: string;
+  videotitle: string;
+  videochannel?: string;
+  views?: number;
+  createdAt?: string;
+};
 
-  const [videos, setVideos] = useState<any[]>([]);
+const HomePage: React.FC = () => {
+  const [videos, setVideos] = useState<Video[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const searchQuery = useMemo(() => {
-    if (!q) return "";
-    return Array.isArray(q) ? q[0] : q;
-  }, [q]);
-
   useEffect(() => {
-    if (!router.isReady) return;
-
     const fetchVideos = async () => {
       try {
-        const res = await axiosInstance.get("/video/getall");
-        setVideos(Array.isArray(res.data) ? res.data : []);
-      } catch (err) {
-        console.error("Error fetching videos:", err);
+        const response = await axiosInstance.get("/video/getall");
+
+        if (Array.isArray(response.data)) {
+          setVideos(response.data);
+        } else {
+          setVideos([]);
+        }
+      } catch (error) {
+        console.error("Error fetching videos:", error);
         setVideos([]);
       } finally {
         setLoading(false);
@@ -30,80 +35,92 @@ const SearchPage = () => {
     };
 
     fetchVideos();
-  }, [router.isReady]);
+  }, []);
 
-  const filteredVideos = useMemo(() => {
-    if (!searchQuery.trim()) return videos;
+  const backendUrl =
+    process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
 
-    return videos.filter((video: any) => {
-      const title = (video.videotitle || "").toLowerCase();
-      const channel = (
-        video.videochannel ||
-        video.videochanel ||
-        ""
-      ).toLowerCase();
+  const getVideoUrl = (video: Video) => {
+    const path = video.filepath || `/uploads/${video.filename}`;
 
-      return (
-        title.includes(searchQuery.toLowerCase()) ||
-        channel.includes(searchQuery.toLowerCase())
-      );
-    });
-  }, [videos, searchQuery]);
+    if (path.startsWith("http")) {
+      return path;
+    }
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        Loading search results...
-      </div>
-    );
-  }
+    return `${backendUrl}${path}`;
+  };
 
   return (
-    <div className="max-w-5xl mx-auto p-6">
-      {searchQuery && (
-        <h1 className="text-2xl font-semibold mb-6">
-          Search results for "{searchQuery}"
+    <div className="min-h-screen bg-white px-6 py-6">
+      {/* PAGE TITLE */}
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-gray-900">
+          Recommended videos
         </h1>
+
+        <p className="text-gray-500 mt-1">
+          Watch the latest videos uploaded to YourTube.
+        </p>
+      </div>
+
+      {/* LOADING */}
+      {loading && (
+        <div className="flex justify-center items-center py-20">
+          <p className="text-gray-500">
+            Loading videos...
+          </p>
+        </div>
       )}
 
-      {filteredVideos.length === 0 ? (
-        <div className="text-center py-12 text-gray-500">
-          No videos found.
+      {/* NO VIDEOS */}
+      {!loading && videos.length === 0 && (
+        <div className="flex flex-col items-center justify-center py-24 text-center">
+          <div className="text-5xl mb-5">
+            ▶️
+          </div>
+
+          <h2 className="text-xl font-semibold text-gray-800">
+            No videos uploaded yet
+          </h2>
+
+          <p className="text-gray-500 mt-2">
+            Uploaded videos will appear here.
+          </p>
         </div>
-      ) : (
-        <div className="space-y-5">
-          {filteredVideos.map((video: any) => (
-            <div
+      )}
+
+      {/* VIDEOS */}
+      {!loading && videos.length > 0 && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {videos.map((video) => (
+            <Link
+              href={`/watch/${video._id}`}
               key={video._id}
-              onClick={() => router.push(`/watch/${video._id}`)}
-              className="flex gap-4 cursor-pointer hover:bg-gray-100 rounded-lg p-2 transition"
+              className="group block"
             >
-              <div className="w-80 h-44 bg-gray-200 rounded-lg overflow-hidden">
-                <img
-                  src={video.thumbnail || "/placeholder.svg"}
-                  alt={video.videotitle}
+              <div className="rounded-xl overflow-hidden bg-gray-100 aspect-video">
+                <video
+                  src={getVideoUrl(video)}
                   className="w-full h-full object-cover"
+                  muted
+                  preload="metadata"
                 />
               </div>
 
-              <div className="flex-1">
-                <h2 className="text-xl font-medium">
+              <div className="pt-3">
+                <h2 className="font-semibold text-gray-900 line-clamp-2 group-hover:text-red-600">
                   {video.videotitle}
                 </h2>
 
-                <p className="text-sm text-gray-500 mt-2">
-                  {(video.views || 0).toLocaleString()} views
+                <p className="text-sm text-gray-500 mt-1">
+                  {video.videochannel || "YourTube Channel"}
                 </p>
 
-                <p className="text-sm text-gray-600 mt-2">
-                  {video.videochannel || video.videochanel || "Unknown Channel"}
-                </p>
-
-                <p className="text-sm text-gray-500 mt-2 line-clamp-2">
-                  {video.description || "No description available."}
+                <p className="text-sm text-gray-500">
+                  {video.views || 0} views
                 </p>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       )}
@@ -111,4 +128,4 @@ const SearchPage = () => {
   );
 };
 
-export default SearchPage;
+export default HomePage;

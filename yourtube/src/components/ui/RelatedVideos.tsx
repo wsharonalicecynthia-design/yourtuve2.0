@@ -1,37 +1,73 @@
+"use client";
+
 import { formatDistanceToNow } from "date-fns";
 import Link from "next/link";
-import React from "react";
 
-const RelatedVideos = ({ videos }: { videos: any[] }) => {
+interface RelatedVideo {
+  _id: string;
+  videotitle?: string;
+  videochannel?: string;
+  views?: number;
+  createdAt?: string;
+}
+
+const RelatedVideos = ({
+  videos,
+}: {
+  videos: RelatedVideo[];
+}) => {
+  const backendUrl =
+    process.env.NEXT_PUBLIC_BACKEND_URL ||
+    "http://localhost:5000";
+
+  if (!videos?.length) {
+    return (
+      <p className="text-sm text-gray-500">
+        No recommended videos
+      </p>
+    );
+  }
+
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-3">
       {videos.map((video) => (
-        <Link key={video._id} href={`/watch/${video._id}`}>
-          <div className="flex gap-3 cursor-pointer hover:bg-gray-100 p-2 rounded-lg transition">
-            {/* Thumbnail */}
+        <Link
+          key={video._id}
+          href={`/watch/${video._id}`}
+        >
+          <div className="flex gap-3 rounded-lg p-2 transition hover:bg-gray-100">
+
             <video
-              src={`${process.env.NEXT_PUBLIC_BACKEND_URL}/video/play/${video.filename}`}
-              className="w-44 h-24 rounded-lg object-cover bg-black"
+              src={`${backendUrl}/video/stream/${video._id}`}
+              className="h-24 w-40 flex-shrink-0 rounded-lg bg-black object-cover"
               muted
               preload="metadata"
             />
 
-            {/* Details */}
-            <div className="flex flex-col flex-1">
-              <h3 className="font-semibold text-sm line-clamp-2">
-                {video.videotitle}
+            <div className="min-w-0 flex-1">
+
+              <h3 className="line-clamp-2 text-sm font-semibold">
+                {video.videotitle ||
+                  "Untitled video"}
               </h3>
 
-              <p className="text-xs text-gray-600 mt-1">
-                {video.videochannel}
+              <p className="mt-1 truncate text-xs text-gray-600">
+                {video.videochannel ||
+                  "YourTube"}
               </p>
 
-              <p className="text-xs text-gray-500 mt-1">
-                {(video.views || 0).toLocaleString()} views •{" "}
+              <p className="mt-1 text-xs text-gray-500">
+                {(video.views || 0).toLocaleString()}
+                {" views • "}
                 {video.createdAt
-                  ? `${formatDistanceToNow(new Date(video.createdAt))} ago`
+                  ? `${formatDistanceToNow(
+                      new Date(
+                        video.createdAt
+                      )
+                    )} ago`
                   : "Just now"}
               </p>
+
             </div>
           </div>
         </Link>

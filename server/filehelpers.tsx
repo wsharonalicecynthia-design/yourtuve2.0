@@ -1,35 +1,127 @@
-import multer, { FileFilterCallback } from "multer";
-import { Request } from "express";
+import express from "express";
+import cors from "cors";
+import dotenv from "dotenv";
+import bodyParser from "body-parser";
+import mongoose from "mongoose";
+import path from "path";
+import { fileURLToPath } from "url";
 
-const storage = multer.diskStorage({
-  destination: (req: Request, file: Express.Multer.File, cb: (error: Error | null, destination: string) => void) => {
-    cb(null, "uploads/");
-  },
+import userroutes from "./routes/auth.js";
+import videoroutes from "./routes/video.js";
+import historyRoutes from "./routes/history.js";
+import likeRoutes from "./routes/like.js";
+import dislikeRoutes from "./routes/dislike.js";
+import watchlaterRoutes from "./routes/watchlater.js";
+import channelRoutes from "./routes/channel.js";
 
-  filename: (req: Request, file: Express.Multer.File, cb: (error: Error | null, filename: string) => void) => {
-    // FIX: Using ISO string is good, but keep it clean
-    const uniqueSuffix = new Date().toISOString().replace(/:/g, "-");
-    cb(null, `${uniqueSuffix}-${file.originalname}`);
-  },
+dotenv.config();
+
+const app = express();
+
+const PORT = process.env.PORT || 5000;
+
+/* -------------------------------------------------- */
+/* PATH SETUP */
+/* -------------------------------------------------- */
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const uploadsPath = path.join(__dirname, "uploads");
+
+/* -------------------------------------------------- */
+/* MIDDLEWARE */
+/* -------------------------------------------------- */
+
+app.use(
+  cors({
+    origin: [
+      "http://localhost:3000",
+      "https://your-deployed-frontend-url.vercel.app",
+    ],
+    credentials: true,
+  })
+);
+
+app.use(
+  bodyParser.json({
+    limit: "30mb",
+  })
+);
+
+app.use(
+  bodyParser.urlencoded({
+    limit: "30mb",
+    extended: true,
+  })
+);
+
+/* -------------------------------------------------- */
+/* SERVE UPLOADED VIDEOS */
+/* -------------------------------------------------- */
+
+app.use(
+  "/uploads",
+  express.static(uploadsPath)
+);
+
+/* -------------------------------------------------- */
+/* API ROUTES */
+/* -------------------------------------------------- */
+
+app.use("/user", userroutes);
+
+app.use("/video", videoroutes);
+
+app.use("/history", historyRoutes);
+
+app.use("/like", likeRoutes);
+
+app.use("/dislike", dislikeRoutes);
+
+app.use("/watchlater", watchlaterRoutes);
+
+app.use("/channel", channelRoutes);
+
+/* -------------------------------------------------- */
+/* TEST ROUTE */
+/* -------------------------------------------------- */
+
+app.get("/", (req, res) => {
+  res.send(
+    "YouTube backend is working fine locally"
+  );
 });
 
-const fileFilter = (
-  req: Request,
-  file: Express.Multer.File,
-  cb: FileFilterCallback
-) => {
-  if (file.mimetype === "video/mp4") {
-    cb(null, true);
-  } else {
-    // Optional: Return an error if the user uploads the wrong file type
-    cb(new Error("Only .mp4 files are allowed!"));
-  }
-};
+/* -------------------------------------------------- */
+/* DATABASE */
+/* -------------------------------------------------- */
 
-const upload = multer({
-  storage: storage,
-  fileFilter: fileFilter,
-  limits: { fileSize: 50 * 1024 * 1024 }, // Optional: Set a file size limit (e.g., 50MB)
-});
+const DBURL =
+  "mongodb://127.0.0.1:27017/youtube";
 
-export default upload;
+console.log("Connecting to Database...");
+
+mongoose
+  .connect(DBURL)
+  .then(() => {
+    console.log(
+      "🍃 Mongodb connected successfully!"
+    );
+
+    app.listen(PORT, () => {
+      console.log(
+        `🚀 Server running on port ${PORT}`
+      );
+
+      console.log(
+        `📁 Uploads served from: ${uploadsPath}`
+      );
+    });
+  })
+  .catch((error) => {
+    console.error(
+      "❌ Connection failed:",
+      error
+    );
+  });

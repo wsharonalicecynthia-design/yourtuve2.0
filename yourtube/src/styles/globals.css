@@ -95,7 +95,115 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+/* ============================= */
+/* HISTORY PAGE */
+/* ============================= */
 
+.history-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+
+  padding: 38px 24px 28px;
+
+  border-bottom: 1px solid #eeeeee;
+}
+
+.history-label {
+  color: #b00000;
+  font-size: 12px;
+  font-weight: 700;
+
+  letter-spacing: 2px;
+
+  margin-bottom: 6px;
+}
+
+.history-count {
+  background: #f5f5f5;
+
+  padding: 8px 14px;
+
+  border-radius: 20px;
+
+  color: #555;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+
+/* EMPTY STATE */
+
+.history-empty {
+  min-height: 400px;
+
+  display: flex;
+  flex-direction: column;
+
+  align-items: center;
+  justify-content: center;
+
+  text-align: center;
+
+  padding: 40px;
+}
+
+.empty-circle {
+  width: 90px;
+  height: 90px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 50%;
+
+  background: #fff1f1;
+
+  font-size: 38px;
+
+  box-shadow:
+    0 8px 30px rgba(150, 0, 0, 0.12);
+
+  animation: historyFloat 2.5s ease-in-out infinite;
+}
+
+@keyframes historyFloat {
+  0% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-7px);
+  }
+
+  100% {
+    transform: translateY(0);
+  }
+}
+
+
+/* LOADER */
+
+.history-loader {
+  width: 42px;
+  height: 42px;
+
+  border-radius: 50%;
+
+  border: 4px solid #eeeeee;
+  border-top-color: #b00000;
+
+  animation: historySpin 0.8s linear infinite;
+
+  margin: auto;
+}
+
+@keyframes historySpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
 .dark {
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
@@ -140,4 +248,180 @@ body {
   html {
     @apply font-sans;
   }
+  /* ================================= */
+/* YOURTUBE INTERACTIVE UI */
+/* ================================= */
+
+/* Smooth page feel */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Video card hover */
+.video-card {
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.video-card:hover {
+  transform: translateY(-4px);
+}
+
+/* Thumbnail zoom */
+.video-thumbnail {
+  transition: transform 0.3s ease;
+}
+
+.video-card:hover .video-thumbnail {
+  transform: scale(1.05);
+}
+
+/* Play button animation */
+.play-button {
+  opacity: 0;
+  transform: scale(0.75);
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
+}
+
+.video-card:hover .play-button {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* ================================= */
+/* LIKE ANIMATION */
+/* ================================= */
+
+.like-pop {
+  animation: likePop 0.35s ease;
+}
+
+@keyframes likePop {
+  0% {
+    transform: scale(1);
+  }
+
+  45% {
+    transform: scale(1.35);
+  }
+
+  70% {
+    transform: scale(0.9);
+  }
+
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* ================================= */
+/* WATCH LATER */
+/* ================================= */
+
+.watch-later-pop {
+  animation: watchLaterPop 0.4s ease;
+}
+
+@keyframes watchLaterPop {
+  0% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.15);
+  }
+
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* ================================= */
+/* UPLOAD ANIMATION */
+/* ================================= */
+
+.upload-success {
+  animation: uploadSuccess 0.5s ease;
+}
+
+@keyframes uploadSuccess {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ================================= */
+/* LOADING SHIMMER */
+/* ================================= */
+
+.loading-shimmer {
+  background: linear-gradient(
+    90deg,
+    #f3f3f3 25%,
+    #e8e8e8 50%,
+    #f3f3f3 75%
+  );
+
+  background-size: 200% 100%;
+
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* ================================= */
+/* SIDEBAR */
+/* ================================= */
+
+.sidebar-item {
+  transition:
+    background-color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.sidebar-item:hover {
+  transform: translateX(3px);
+}
+
+/* ================================= */
+/* SEARCH BAR */
+/* ================================= */
+
+.search-focus {
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.search-focus:focus-within {
+  border-color: #111;
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.06);
+}
+
+/* ================================= */
+/* MOBILE */
+/* ================================= */
+
+@media (max-width: 768px) {
+  .video-card {
+    max-width: 100%;
+  }
+}
 }

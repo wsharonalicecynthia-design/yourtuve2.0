@@ -1,139 +1,338 @@
-import React, { useEffect, useState } from "react";
-import { Avatar, AvatarFallback } from "./avatar";
-import { Button } from "./button";
-import { ThumbsUp, ThumbsDown, Share, Download, MoreHorizontal, Clock } from "lucide-react";
-import axiosInstance from "@/lib/axiosInstance";
+"use client";
 
-interface VideoProps {
-  id: string;
-  videotitle: string;
-  videochannel: string;
-  Like?: number;
-  Dislike?: number;
+import React, {
+  useContext,
+  useEffect,
+  useState,
+} from "react";
+
+import {
+  ThumbsUp,
+  ThumbsDown,
+  Share2,
+  Clock,
+} from "lucide-react";
+
+import { UserContext } from "@/lib/AuthContext";
+import axiosInstance from "@/lib/axiosInstance";
+import { toast } from "sonner";
+
+interface Video {
+  _id: string;
+  videotitle?: string;
+  videochannel?: string;
+  uploader?: string;
+  views?: number;
+  like?: number;
+  dislike?: number;
 }
 
-const VideoInfo: React.FC<{ video: VideoProps }> = ({ video }) => {
-  const [likes, setLikes] = useState(video?.Like || 0);
-  const [dislikes, setDislikes] = useState(video?.Dislike || 0);
-  const [isLiked, setIsLiked] = useState(false);
-  const [isDisliked, setIsDisliked] = useState(false);
-  const [isWatchLater, setIsWatchLater] = useState(false);
+interface VideoInfoProps {
+  video: Video | null;
+}
 
-  const user = { id: "1", name: "Sharon" };
+const VideoInfo: React.FC<VideoInfoProps> = ({
+  video,
+}) => {
+  const context = useContext(UserContext);
+  const user = context?.user;
+
+  const [liked, setLiked] = useState(false);
+  const [disliked, setDisliked] = useState(false);
+  const [likeCount, setLikeCount] = useState(
+    video?.like || 0
+  );
+  const [dislikeCount, setDislikeCount] = useState(
+    video?.dislike || 0
+  );
+  const [watchLater, setWatchLater] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    setLikes(video?.Like || 0);
-    setDislikes(video?.Dislike || 0);
-    setIsLiked(false);
-    setIsDisliked(false);
-    setIsWatchLater(false);
+    setLikeCount(video?.like || 0);
+    setDislikeCount(video?.dislike || 0);
   }, [video]);
 
-const handleLike = async () => {
-  try {
-    const res = await axiosInstance.post(`/like/${video.id}`, {
-      userId: user.id,
-    });
-
-    const { liked } = res.data;
-
-    setLikes((prev) => (liked ? prev + 1 : prev - 1));
-    setIsLiked(liked);
-
-    // if switching from dislike → like
-    if (liked && isDisliked) {
-      setDislikes((prev) => prev - 1);
-      setIsDisliked(false);
-    }
-  } catch (error) {
-    console.error("Error liking video:", error);
+  if (!video) {
+    return null;
   }
-};
 
-const handleDislike = async () => {
-  try {
-    const res = await axiosInstance.post(`/dislike/${video.id}`, {
-      userId: user.id,
-    });
-
-    const { disliked } = res.data;
-
-    setDislikes((prev) => (disliked ? prev + 1 : prev - 1));
-    setIsDisliked(disliked);
-
-    if (disliked && isLiked) {
-      setLikes((prev) => prev - 1);
-      setIsLiked(false);
+  const requireLogin = () => {
+    if (!user) {
+      toast.error("Please sign in first");
+      return false;
     }
-  } catch (error) {
-    console.error("Error disliking video:", error);
-  }
-};
-  const handleWatchLater = async () => {
+
+    return true;
+  };
+
+  const handleLike = async () => {
+    if (!requireLogin()) {
+      return;
+    }
+
+    if (!video._id || !user?._id) {
+      return;
+    }
+
     try {
-      const res = await axiosInstance.post(`/watchlater/${video.id}`, { userId: user.id });
-      setIsWatchLater(res.data.watchlater);
+      setLoading(true);
+
+      if (liked) {
+        setLiked(false);
+        setLikeCount((count) =>
+          Math.max(0, count - 1)
+        );
+        return;
+      }
+
+      await axiosInstance.post("/like", {
+        viewer: user._id,
+        videoid: video._id,
+      });
+
+      setLiked(true);
+      setDisliked(false);
+      setLikeCount((count) => count + 1);
+
+      toast.success("Added to liked videos");
+    } catch (error: any) {
+      console.error(
+        "LIKE ERROR:",
+        error?.response?.data || error
+      );
+
+      toast.error(
+        error?.response?.data?.message ||
+          "Failed to like video"
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDislike = async () => {
+    if (!requireLogin()) {
+      return;
+    }
+
+    if (!video._id || !user?._id) {
+      return;
+    }
+
+    try {
+      setDisliked(!disliked);
+
+      if (!disliked) {
+        setDislikeCount((count) => count + 1);
+
+        if (liked) {
+          setLiked(false);
+          setLikeCount((count) =>
+            Math.max(0, count - 1)
+          );
+        }
+      } else {
+        setDislikeCount((count) =>
+          Math.max(0, count - 1)
+        );
+      }
     } catch (error) {
-      console.error("Error adding to watch later:", error);
+      console.error("DISLIKE ERROR:", error);
+    }
+  };
+
+  const handleWatchLater = async () => {
+    if (!requireLogin()) {
+      return;
+    }
+
+    if (!video._id || !user?._id) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      await axiosInstance.post("/watchlater", {
+        viewer: user._id,
+        videoid: video._id,
+      });
+
+      setWatchLater(true);
+
+      toast.success("Added to Watch later");
+    } catch (error: any) {
+      console.error(
+        "WATCH LATER ERROR:",
+        error?.response?.data || error
+      );
+
+      toast.error(
+        error?.response?.data?.message ||
+          "Failed to add to Watch later"
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleShare = async () => {
+    try {
+      const url = window.location.href;
+
+      if (navigator.share) {
+        await navigator.share({
+          title:
+            video.videotitle || "Check out this video",
+          url,
+        });
+      } else {
+        await navigator.clipboard.writeText(url);
+        toast.success("Video link copied");
+      }
+    } catch (error) {
+      console.error("SHARE ERROR:", error);
     }
   };
 
   return (
-    <div className="space-y-4">
-      <h1 className="text-xl font-semibold">{video.videotitle}</h1>
+    <div className="w-full">
 
-      <div className="flex items-center justify-between">
-        {/* Channel Info */}
-        <div className="flex items-center gap-4">
-          <Avatar className="w-10 h-10">
-            <AvatarFallback>
-              {video?.videochannel?.[0]?.toUpperCase() || "U"}
-            </AvatarFallback>
-          </Avatar>
-          <div>
-            <h3 className="font-medium">{video.videochannel}</h3>
-            <p className="text-sm text-gray-600">1.2M subscribers</p>
-          </div>
-          <Button className="ml-4 bg-red-600 text-white hover:bg-red-700">
-            Subscribe
-          </Button>
-        </div>
+      {/* TITLE */}
+      <h1 className="text-xl font-bold leading-7 text-gray-900">
+        {video.videotitle || "Untitled video"}
+      </h1>
 
-        {/* Action Buttons */}
-        <div className="flex items-center gap-2">
-          <div className="flex items-center">
-            <Button
-              onClick={handleLike}
-              className={`flex gap-2 ${isLiked ? "bg-gray-200" : ""}`}
-            >
-              <ThumbsUp className="w-4 h-4" />
-              {likes.toLocaleString()}
-            </Button>
-            <div className="w-[1px] h-6 bg-gray-300 mx-1" />
-            <Button
-              onClick={handleDislike}
-              className={`flex gap-2 ${isDisliked ? "bg-gray-200" : ""}`}
-            >
-              <ThumbsDown className="w-4 h-4" />
-              {dislikes.toLocaleString()}
-            </Button>
-          </div>
-          <Button
-            onClick={handleWatchLater}
-            className={`flex gap-2 ${isWatchLater ? "bg-gray-200" : ""}`}
-          >
-            <Clock className="w-4 h-4" /> {isWatchLater ? "Saved" : "Watch Later"}
-          </Button>
-          <Button className="flex gap-2">
-            <Share className="w-4 h-4" /> Share
-          </Button>
-          <Button className="flex gap-2">
-            <Download className="w-4 h-4" /> Download
-          </Button>
-          <Button>
-            <MoreHorizontal className="w-4 h-4" />
-          </Button>
-        </div>
+      {/* CHANNEL + VIEWS */}
+      <div className="mt-3 flex flex-wrap items-center gap-2 text-sm text-gray-500">
+        <span className="font-medium text-gray-900">
+          {video.videochannel || "YourTube"}
+        </span>
+
+        <span>•</span>
+
+        <span>
+          {(video.views || 0).toLocaleString()} views
+        </span>
+      </div>
+
+      {/* ACTION BUTTONS */}
+      <div className="mt-5 flex flex-wrap items-center gap-3">
+
+        {/* LIKE */}
+        <button
+          type="button"
+          onClick={handleLike}
+          disabled={loading}
+          className={`
+            flex
+            items-center
+            gap-2
+            rounded-full
+            px-4
+            py-2.5
+            text-sm
+            font-medium
+            transition-all
+            duration-200
+            ${
+              liked
+                ? "bg-black text-white"
+                : "bg-gray-100 text-gray-800 hover:bg-gray-200"
+            }
+          `}
+        >
+          <ThumbsUp className="h-4 w-4" />
+
+          <span>{likeCount}</span>
+        </button>
+
+        {/* DISLIKE */}
+        <button
+          type="button"
+          onClick={handleDislike}
+          disabled={loading}
+          className={`
+            flex
+            items-center
+            gap-2
+            rounded-full
+            px-4
+            py-2.5
+            text-sm
+            font-medium
+            transition-all
+            duration-200
+            ${
+              disliked
+                ? "bg-black text-white"
+                : "bg-gray-100 text-gray-800 hover:bg-gray-200"
+            }
+          `}
+        >
+          <ThumbsDown className="h-4 w-4" />
+
+          <span>{dislikeCount}</span>
+        </button>
+
+        {/* SHARE */}
+        <button
+          type="button"
+          onClick={handleShare}
+          className="
+            flex
+            items-center
+            gap-2
+            rounded-full
+            bg-gray-100
+            px-4
+            py-2.5
+            text-sm
+            font-medium
+            text-gray-800
+            transition-all
+            duration-200
+            hover:bg-gray-200
+          "
+        >
+          <Share2 className="h-4 w-4" />
+
+          <span>Share</span>
+        </button>
+
+        {/* WATCH LATER */}
+        <button
+          type="button"
+          onClick={handleWatchLater}
+          disabled={loading}
+          className={`
+            flex
+            items-center
+            gap-2
+            rounded-full
+            px-4
+            py-2.5
+            text-sm
+            font-medium
+            transition-all
+            duration-200
+            ${
+              watchLater
+                ? "bg-black text-white"
+                : "bg-gray-100 text-gray-800 hover:bg-gray-200"
+            }
+          `}
+        >
+          <Clock className="h-4 w-4" />
+
+          <span>
+            {watchLater
+              ? "Saved"
+              : "Watch later"}
+          </span>
+        </button>
+
       </div>
     </div>
   );

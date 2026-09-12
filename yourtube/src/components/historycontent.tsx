@@ -1,199 +1,442 @@
 "use client";
 
-import { useContext, useEffect, useState } from "react";
-import Link from "next/link";
-import { formatDistanceToNow } from "date-fns";
-import { MoreVertical, X, Clock } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import React, {
+  useContext,
+  useEffect,
+  useState,
+} from "react";
 
-import { UserContext } from "@/lib/AuthContext";
+import Link from "next/link";
+
 import axiosInstance from "@/lib/axiosInstance";
+import { UserContext } from "@/lib/AuthContext";
+
+import { Clock, Play, Trash2 } from "lucide-react";
+
+interface Video {
+  _id: string;
+  videotitle?: string;
+  videochannel?: string;
+  filepath?: string;
+  filename?: string;
+  views?: number;
+  createdAt?: string;
+}
 
 interface HistoryItem {
   _id: string;
-  videoid: string;
-  viewer: string;
-  watchedon: string;
-  video: {
-    _id: string;
-    videotitle: string;
-    videochannel: string;
-    views: number;
-    createdAt: string;
-  };
+  watchedon?: string;
+  videoid?: string;
+  video?: Video;
 }
 
-const HistoryContentComponent = () => {
-  const { user }: any = useContext(UserContext);
+const HistoryContent = () => {
+  const context = useContext(UserContext);
+  const user = context?.user;
 
-  const [watchHistoryData, setWatchHistoryData] = useState<HistoryItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [history, setHistory] =
+    useState<HistoryItem[]>([]);
+
+  const [loading, setLoading] =
+    useState(true);
+
+  const [error, setError] =
+    useState("");
+
+  const backendUrl =
+    process.env.NEXT_PUBLIC_BACKEND_URL ||
+    "http://localhost:5000";
+
+
+  /*
+    FETCH HISTORY
+  */
 
   useEffect(() => {
-    if (!user) {
-      setLoading(false);
+    if (!user?._id) {
       return;
     }
 
-    loadHistory();
-  }, [user]);
+    fetchHistory();
+  }, [user?._id]);
 
-  const loadHistory = async () => {
+
+  const fetchHistory = async () => {
+    if (!user?._id) {
+      return;
+    }
+
     try {
-      const res = await axiosInstance.get(`/history/${user._id}`);
-      setWatchHistoryData(res.data || []);
-    } catch (error) {
-      console.error("Error loading history:", error);
-      setWatchHistoryData([]);
+      setLoading(true);
+      setError("");
+
+      const response =
+        await axiosInstance.get(
+          `/history/${user._id}`
+        );
+
+      console.log(
+        "HISTORY RESPONSE:",
+        response.data
+      );
+
+      /*
+        Support both:
+
+        [
+          {...},
+          {...}
+        ]
+
+        and:
+
+        {
+          history: [...]
+        }
+      */
+
+      let historyData: HistoryItem[] = [];
+
+      if (Array.isArray(response.data)) {
+        historyData = response.data;
+      } else if (
+        Array.isArray(response.data?.history)
+      ) {
+        historyData = response.data.history;
+      } else if (
+        Array.isArray(response.data?.data)
+      ) {
+        historyData = response.data.data;
+      }
+
+      console.log(
+        "HISTORY ITEMS:",
+        historyData
+      );
+
+      setHistory(historyData);
+
+    } catch (err: any) {
+      console.error(
+        "HISTORY ERROR:",
+        err?.response?.data || err
+      );
+
+      setError(
+        err?.response?.data?.message ||
+          "Failed to load history"
+      );
+
     } finally {
       setLoading(false);
     }
   };
 
-  const handleRemoveFromHistory = async (historyId: string) => {
-    try {
-      await axiosInstance.delete(`/history/${historyId}`);
 
-      setWatchHistoryData((prev) =>
-        prev.filter((item) => item._id !== historyId)
+  /*
+    REMOVE ONE HISTORY ITEM
+  */
+
+  const removeHistory = async (
+    historyId: string
+  ) => {
+    try {
+      await axiosInstance.delete(
+        `/history/${historyId}`
       );
-    } catch (error) {
-      console.error("Error removing history:", error);
+
+      setHistory((previous) =>
+        previous.filter(
+          (item) =>
+            item._id !== historyId
+        )
+      );
+
+    } catch (err: any) {
+      console.error(
+        "REMOVE HISTORY ERROR:",
+        err?.response?.data || err
+      );
     }
   };
 
-  if (loading) {
-    return (
-      <div className="p-2 text-sm text-gray-500 font-medium">
-        Loading history...
-      </div>
-    );
-  }
+
+  /*
+    CLEAR ALL HISTORY
+  */
+
+  const clearHistory = async () => {
+    if (!user?._id) {
+      return;
+    }
+
+    try {
+      await axiosInstance.delete(
+        `/history/user/${user._id}`
+      );
+
+      setHistory([]);
+
+    } catch (err: any) {
+      console.error(
+        "CLEAR HISTORY ERROR:",
+        err?.response?.data || err
+      );
+    }
+  };
+
+
+  /*
+    NOT LOGGED IN
+  */
 
   if (!user) {
     return (
-      <div className="text-center py-12 border border-dashed border-gray-200 rounded-2xl">
-        <Clock className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-        <h2 className="text-xl font-semibold mb-2">
-          Please login to view your history
-        </h2>
-      </div>
-    );
-  }
+      <div className="flex min-h-[500px] flex-col items-center justify-center text-center">
+        <Clock className="mb-4 h-16 w-16 text-gray-300" />
 
-  if (watchHistoryData.length === 0) {
-    return (
-      <div className="text-center py-12 border border-dashed border-gray-200 rounded-2xl">
-        <Clock className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-        <h2 className="text-xl font-semibold mb-2">
-          No watch history yet
+        <h2 className="text-2xl font-bold text-gray-900">
+          Sign in to see your history
         </h2>
-        <p className="text-gray-600">
+
+        <p className="mt-2 text-gray-500">
           Videos you watch will appear here.
         </p>
       </div>
     );
   }
 
-  return (
-    <div className="space-y-4">
-      <div className="flex justify-between items-center border-b border-gray-100 pb-2">
-        <p className="text-xs font-medium text-gray-500">
-          {watchHistoryData.length} videos
+
+  /*
+    LOADING
+  */
+
+  if (loading) {
+    return (
+      <div className="p-6 text-sm text-gray-500">
+        Loading watch history...
+      </div>
+    );
+  }
+
+
+  /*
+    ERROR
+  */
+
+  if (error) {
+    return (
+      <div className="p-6">
+        <p className="text-red-500">
+          {error}
         </p>
+
+        <button
+          onClick={fetchHistory}
+          className="mt-3 rounded-full bg-black px-4 py-2 text-sm text-white"
+        >
+          Try again
+        </button>
+      </div>
+    );
+  }
+
+
+  /*
+    EMPTY
+  */
+
+  if (history.length === 0) {
+    return (
+      <div className="flex min-h-[500px] flex-col items-center justify-center text-center">
+
+        <div className="mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-red-50">
+          <Clock className="h-12 w-12 text-red-500" />
+        </div>
+
+        <h2 className="text-2xl font-bold text-gray-900">
+          No watch history yet
+        </h2>
+
+        <p className="mt-2 text-gray-500">
+          Videos you watch will appear here.
+        </p>
+
+        <Link
+          href="/"
+          className="mt-8 flex items-center gap-2 rounded-full bg-black px-6 py-3 font-semibold text-white transition hover:bg-gray-800"
+        >
+          <Play className="h-5 w-5 fill-white" />
+          Start watching
+        </Link>
+
+      </div>
+    );
+  }
+
+
+  /*
+    HISTORY LIST
+  */
+
+  return (
+    <div>
+
+      <div className="mb-6 flex items-center justify-between">
+
+        <div>
+          <h2 className="text-xl font-bold text-gray-900">
+            Watch history
+          </h2>
+
+          <p className="mt-1 text-sm text-gray-500">
+            {history.length}{" "}
+            {history.length === 1
+              ? "video"
+              : "videos"}
+          </p>
+        </div>
+
+        <button
+          onClick={clearHistory}
+          className="flex items-center gap-2 rounded-full px-4 py-2 text-sm text-gray-600 transition hover:bg-gray-100"
+        >
+          <Trash2 className="h-4 w-4" />
+          Clear history
+        </button>
+
       </div>
 
-      <div className="space-y-4">
-        {watchHistoryData.map((item) => (
-          <div
-            key={item._id}
-            className="flex gap-4 p-2 rounded-2xl hover:bg-gray-50/50 transition-colors group relative"
-          >
-            {/* Thumbnail */}
-            <Link
-              href={`/watch/${item.video._id}`}
-              className="flex-shrink-0"
-            >
-              <div className="relative w-40 aspect-video bg-gray-100 rounded-xl overflow-hidden border border-gray-100">
-                <video
-                  src="/video/music.mp4"
-                  muted
-                  playsInline
-                  className="object-cover w-full h-full"
-                />
-              </div>
-            </Link>
 
-            {/* Metadata */}
-            <div className="flex-1 min-w-0 flex justify-between items-start">
-              <div className="flex flex-col justify-center">
-                <Link href={`/watch/${item.video._id}`}>
-                  <h3 className="font-semibold text-sm text-gray-900 line-clamp-2 hover:text-blue-600 leading-snug mb-1">
-                    {item.video.videotitle}
+      <div className="flex flex-col gap-4">
+
+        {history.map((item) => {
+
+          const video =
+            item.video;
+
+          /*
+            Skip broken history records
+          */
+
+          if (!video?._id) {
+            return null;
+          }
+
+          const videoUrl = video.filepath
+            ? `${backendUrl}${video.filepath}`
+            : video.filename
+            ? `${backendUrl}/uploads/${video.filename}`
+            : "";
+
+
+          return (
+            <div
+              key={item._id}
+              className="group flex gap-4 rounded-xl p-2 transition hover:bg-gray-50"
+            >
+
+              {/* VIDEO PREVIEW */}
+
+              <Link
+                href={`/watch/${video._id}`}
+                className="relative h-36 w-60 flex-shrink-0 overflow-hidden rounded-xl bg-gray-200"
+              >
+
+                {videoUrl ? (
+                  <video
+                    src={videoUrl}
+                    muted
+                    preload="metadata"
+                    playsInline
+                    className="h-full w-full object-cover"
+                    onLoadedMetadata={(event) => {
+                      const element =
+                        event.currentTarget;
+
+                      if (
+                        Number.isFinite(
+                          element.duration
+                        ) &&
+                        element.duration > 0
+                      ) {
+                        try {
+                          element.currentTime =
+                            Math.min(
+                              1,
+                              element.duration / 2
+                            );
+                        } catch {
+                          // Ignore seek errors
+                        }
+                      }
+                    }}
+                  />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center text-sm text-gray-500">
+                    No preview
+                  </div>
+                )}
+
+              </Link>
+
+
+              {/* VIDEO INFORMATION */}
+
+              <div className="min-w-0 flex-1">
+
+                <Link
+                  href={`/watch/${video._id}`}
+                >
+                  <h3 className="line-clamp-2 text-lg font-semibold text-gray-900 hover:text-blue-600">
+                    {video.videotitle ||
+                      "Untitled video"}
                   </h3>
                 </Link>
 
-                <p className="text-xs text-gray-500">
-                  {item.video.videochannel}
+                <p className="mt-2 text-sm text-gray-600">
+                  {video.videochannel ||
+                    "YourTube"}
                 </p>
 
-                <p className="text-[11px] text-gray-400 mt-1">
-                  {item.video.views.toLocaleString()} views •{" "}
-                  {formatDistanceToNow(
-                    new Date(item.video.createdAt)
-                  )}{" "}
-                  ago
+                <p className="mt-1 text-sm text-gray-500">
+                  {(video.views || 0).toLocaleString()}{" "}
+                  views
                 </p>
 
-                <p className="text-[11px] text-blue-500 font-medium mt-0.5">
-                  Watched{" "}
-                  {formatDistanceToNow(new Date(item.watchedon))} ago
-                </p>
+                {item.watchedon && (
+                  <p className="mt-1 text-sm text-gray-400">
+                    Watched{" "}
+                    {new Date(
+                      item.watchedon
+                    ).toLocaleString()}
+                  </p>
+                )}
+
               </div>
 
-              {/* Action Menu */}
-              <div
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                }}
+
+              {/* REMOVE BUTTON */}
+
+              <button
+                type="button"
+                onClick={() =>
+                  removeHistory(item._id)
+                }
+                className="self-start rounded-full p-2 text-gray-400 opacity-0 transition hover:bg-gray-100 hover:text-red-500 group-hover:opacity-100"
+                title="Remove from history"
               >
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="opacity-0 group-hover:opacity-100 transition-opacity w-8 h-8 rounded-full"
-                    >
-                      <MoreVertical className="w-4 h-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
+                <Trash2 className="h-5 w-5" />
+              </button>
 
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem
-                      className="text-red-600 focus:text-red-700 cursor-pointer"
-                      onClick={() =>
-                        handleRemoveFromHistory(item._id)
-                      }
-                    >
-                      <X className="w-4 h-4 mr-2" />
-                      Remove from history
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
+
       </div>
+
     </div>
   );
 };
 
-export default HistoryContentComponent;
+export default HistoryContent;

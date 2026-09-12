@@ -1,6 +1,6 @@
 import React, { useState, useContext, useEffect } from "react";
 import Link from "next/link";
-import { useRouter } from "next/router"; 
+import { useRouter } from "next/navigation";
 import { Bell, Menu, Mic, Search, User, Video as VideoIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -44,11 +44,14 @@ const Header = () => {
     }
   };
 
-  const handleKeypress = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") {
-      handleSearch(e as unknown as React.FormEvent);
+ const handleKeypress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  if (e.key === "Enter") {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
     }
-  };
+  }
+};
 
   return (
     <header className="flex items-center justify-between px-4 py-2 bg-white border-b sticky top-0 z-50">
@@ -74,7 +77,7 @@ const Header = () => {
             type="search"
             placeholder="Search"
             value={searchQuery}
-            onKeyPress={handleKeypress}
+         onKeyDown={handleKeypress}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="rounded-l-full border-r-0 focus-visible:ring-0 text-black bg-transparent w-full"
           />
@@ -91,11 +94,20 @@ const Header = () => {
       <div className="flex items-center gap-2">
         {isMounted && user ? (
           <>
-            <Link href={hasChannel ? `/channel/${userId}` : "#"} onClick={() => !hasChannel && setisdialogopen(true)}>
-              <Button variant="ghost" size="icon" className="rounded-full">
-                <VideoIcon className="w-6 h-6 text-black" />
-              </Button>
-            </Link>
+            
+            <Link
+  href="/"
+  onClick={(e) => {
+    if (!hasChannel) {
+      e.preventDefault();
+      setisdialogopen(true);
+    }
+  }}
+>
+  <Button variant="ghost" size="icon" className="rounded-full">
+    <VideoIcon className="w-6 h-6 text-black" />
+  </Button>
+</Link>
 
             <Button variant="ghost" size="icon" className="rounded-full">
               <Bell className="w-6 h-6 text-black" />

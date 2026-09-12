@@ -2,29 +2,38 @@ import React, { useEffect, useState } from "react";
 import Videocard from "./Videocard";
 import axiosInstance from "@/lib/axiosInstance";
 
+interface Video {
+  _id: string;
+  videotitle: string;
+  videochannel: string;
+  filepath: string;
+  views: number;
+  createdAt: string;
+}
+
 const Videogrid = () => {
-  const [videos, setVideos] = useState<any[]>([]);
+  const [videos, setVideos] = useState<Video[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchvideo = async () => {
+    const fetchVideos = async () => {
       try {
         const res = await axiosInstance.get("/video/getall");
         setVideos(res.data || []);
       } catch (error) {
-        console.log(error);
+        console.error("Failed to fetch videos:", error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchvideo();
+    fetchVideos();
   }, []);
 
   if (loading) {
     return (
-      <div className="text-center py-6">
-        Loading...
+      <div className="flex justify-center py-10">
+        <p className="text-gray-500">Loading videos...</p>
       </div>
     );
   }
@@ -32,7 +41,7 @@ const Videogrid = () => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
       {videos.length > 0 ? (
-        videos.map((video: any) => (
+        videos.map((video) => (
           <Videocard key={video._id} video={video} />
         ))
       ) : (
