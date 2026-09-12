@@ -31,11 +31,8 @@ interface HistoryItem {
 }
 
 const HistoryContent = () => {
-  const context = useContext(UserContext) as {
-  user: any;
-} | null;
-
-const user = context?.user;
+  const context = useContext(UserContext);
+  const user = context?.user;
 
   const [history, setHistory] =
     useState<HistoryItem[]>([]);
@@ -46,17 +43,10 @@ const user = context?.user;
   const [error, setError] =
     useState("");
 
-  const backendUrl =
-    process.env.NEXT_PUBLIC_BACKEND_URL ||
-    "http://localhost:5000";
-
-
-  /*
-    FETCH HISTORY
-  */
 
   useEffect(() => {
     if (!user?._id) {
+      setLoading(false);
       return;
     }
 
@@ -83,42 +73,11 @@ const user = context?.user;
         response.data
       );
 
-      /*
-        Support both:
-
-        [
-          {...},
-          {...}
-        ]
-
-        and:
-
-        {
-          history: [...]
-        }
-      */
-
-      let historyData: HistoryItem[] = [];
-
-      if (Array.isArray(response.data)) {
-        historyData = response.data;
-      } else if (
-        Array.isArray(response.data?.history)
-      ) {
-        historyData = response.data.history;
-      } else if (
-        Array.isArray(response.data?.data)
-      ) {
-        historyData = response.data.data;
-      }
-
-      console.log(
-        "HISTORY ITEMS:",
-        historyData
+      setHistory(
+        Array.isArray(response.data)
+          ? response.data
+          : []
       );
-
-      setHistory(historyData);
-
     } catch (err: any) {
       console.error(
         "HISTORY ERROR:",
@@ -129,16 +88,11 @@ const user = context?.user;
         err?.response?.data?.message ||
           "Failed to load history"
       );
-
     } finally {
       setLoading(false);
     }
   };
 
-
-  /*
-    REMOVE ONE HISTORY ITEM
-  */
 
   const removeHistory = async (
     historyId: string
@@ -154,7 +108,6 @@ const user = context?.user;
             item._id !== historyId
         )
       );
-
     } catch (err: any) {
       console.error(
         "REMOVE HISTORY ERROR:",
@@ -163,10 +116,6 @@ const user = context?.user;
     }
   };
 
-
-  /*
-    CLEAR ALL HISTORY
-  */
 
   const clearHistory = async () => {
     if (!user?._id) {
@@ -179,7 +128,6 @@ const user = context?.user;
       );
 
       setHistory([]);
-
     } catch (err: any) {
       console.error(
         "CLEAR HISTORY ERROR:",
@@ -279,7 +227,7 @@ const user = context?.user;
 
 
   /*
-    HISTORY LIST
+    HISTORY
   */
 
   return (
@@ -318,20 +266,9 @@ const user = context?.user;
           const video =
             item.video;
 
-          /*
-            Skip broken history records
-          */
-
-          if (!video?._id) {
+          if (!video) {
             return null;
           }
-
-          const videoUrl = video.filepath
-            ? `${backendUrl}${video.filepath}`
-            : video.filename
-            ? `${backendUrl}/uploads/${video.filename}`
-            : "";
-
 
           return (
             <div
@@ -339,52 +276,30 @@ const user = context?.user;
               className="group flex gap-4 rounded-xl p-2 transition hover:bg-gray-50"
             >
 
-              {/* VIDEO PREVIEW */}
-
               <Link
                 href={`/watch/${video._id}`}
-                className="relative h-36 w-60 flex-shrink-0 overflow-hidden rounded-xl bg-gray-200"
+                className="relative h-36 w-60 flex-shrink-0 overflow-hidden rounded-xl bg-black"
               >
 
-                {videoUrl ? (
+                {video.filepath ? (
                   <video
-                    src={videoUrl}
+                    src={`${
+                      process.env
+                        .NEXT_PUBLIC_BACKEND_URL ||
+                      "http://localhost:5000"
+                    }${video.filepath}`}
                     muted
                     preload="metadata"
-                    playsInline
                     className="h-full w-full object-cover"
-                    onLoadedMetadata={(event) => {
-                      const element =
-                        event.currentTarget;
-
-                      if (
-                        Number.isFinite(
-                          element.duration
-                        ) &&
-                        element.duration > 0
-                      ) {
-                        try {
-                          element.currentTime =
-                            Math.min(
-                              1,
-                              element.duration / 2
-                            );
-                        } catch {
-                          // Ignore seek errors
-                        }
-                      }
-                    }}
                   />
                 ) : (
-                  <div className="flex h-full w-full items-center justify-center text-sm text-gray-500">
+                  <div className="flex h-full w-full items-center justify-center text-sm text-white">
                     No preview
                   </div>
                 )}
 
               </Link>
 
-
-              {/* VIDEO INFORMATION */}
 
               <div className="min-w-0 flex-1">
 
@@ -419,12 +334,11 @@ const user = context?.user;
               </div>
 
 
-              {/* REMOVE BUTTON */}
-
               <button
-                type="button"
                 onClick={() =>
-                  removeHistory(item._id)
+                  removeHistory(
+                    item._id
+                  )
                 }
                 className="self-start rounded-full p-2 text-gray-400 opacity-0 transition hover:bg-gray-100 hover:text-red-500 group-hover:opacity-100"
                 title="Remove from history"

@@ -16,14 +16,11 @@ import channelRoutes from "./routes/channel.js";
 import commentRoutes from "./routes/comment.js";
 import subscriptionRoutes from "./routes/subscription.js";
 
-
 dotenv.config();
-
 
 const app = express();
 
-const PORT = process.env.PORT || 5000;
-
+const PORT = process.env.PORT || process.env.HOST || 5000;
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -32,7 +29,6 @@ const uploadsPath = path.join(
   __dirname,
   "uploads"
 );
-
 
 /*
   CORS
@@ -48,7 +44,6 @@ app.use(
   })
 );
 
-
 /*
   BODY PARSER
 */
@@ -59,14 +54,12 @@ app.use(
   })
 );
 
-
 app.use(
   bodyParser.urlencoded({
     limit: "30mb",
     extended: true,
   })
 );
-
 
 /*
   UPLOADS
@@ -77,7 +70,6 @@ app.use(
   express.static(uploadsPath)
 );
 
-
 /*
   API ROUTES
 */
@@ -87,54 +79,45 @@ app.use(
   userroutes
 );
 
-
 app.use(
   "/video",
   videoroutes
 );
-
 
 app.use(
   "/history",
   historyRoutes
 );
 
-
 app.use(
   "/like",
   likeRoutes
 );
-
 
 app.use(
   "/dislike",
   dislikeRoutes
 );
 
-
 app.use(
   "/watchlater",
   watchlaterRoutes
 );
-
 
 app.use(
   "/channel",
   channelRoutes
 );
 
-
 app.use(
   "/comment",
   commentRoutes
 );
 
-
 app.use(
   "/subscription",
   subscriptionRoutes
 );
-
 
 /*
   TEST ROUTE
@@ -146,19 +129,15 @@ app.get("/", (req, res) => {
   );
 });
 
-
 /*
   MONGODB
 */
 
-const DBURL =
-  "mongodb://127.0.0.1:27017/youtube";
-
+const DBURL = "mongodb://127.0.0.1:27017/youtube";
 
 console.log(
   "Connecting to Database..."
 );
-
 
 mongoose
   .connect(DBURL)
@@ -167,7 +146,6 @@ mongoose
     console.log(
       "🍃 Mongodb connected successfully!"
     );
-
 
     app.listen(PORT, () => {
 
