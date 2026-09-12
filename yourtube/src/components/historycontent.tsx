@@ -31,8 +31,11 @@ interface HistoryItem {
 }
 
 const HistoryContent = () => {
-  const context = useContext(UserContext);
-  const user = context?.user;
+  const context = useContext(UserContext) as {
+  user: any;
+} | null;
+
+const user = context?.user;
 
   const [history, setHistory] =
     useState<HistoryItem[]>([]);
