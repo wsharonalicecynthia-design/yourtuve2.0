@@ -151,8 +151,7 @@ app.get("/", (req, res) => {
   MONGODB
 */
 
-const DBURL =
-  "mongodb://127.0.0.1:27017/youtube";
+const DBURL = process.env.DB_URL || "mongodb://127.0.0.1:27017/youtube";
 
 
 console.log(

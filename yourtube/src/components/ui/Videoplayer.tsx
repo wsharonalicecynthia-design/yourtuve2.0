@@ -22,7 +22,7 @@ const Videoplayer = ({ video }: { video?: any }) => {
       >
         {/* THIS IS THE EXACT LINE YOU WANTED */}
         <source 
-          src={`${process.env.NEXT_PUBLIC_BACKEND_URL}/play/${video?.filepath}`} 
+          src={`${process.env.NEXT_PUBLIC_BACKEND_URL}${video?.filepath}`} 
           type="video/mp4" 
         />
         Your browser does not support the video tag.

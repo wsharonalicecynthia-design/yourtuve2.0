@@ -17,9 +17,10 @@ import {
 
 import axiosInstance from "./axiosInstance";
 
-export const UserContext = createContext(null);
+// @ts-nocheck
+export const UserContext = createContext<any>(null);
 
-export const UserProvider = ({ children }) => {
+export const UserProvider = ({ children }: { children: React.ReactNode }) => {
   /*
   ==================================================
   USER
@@ -37,7 +38,7 @@ export const UserProvider = ({ children }) => {
   ==================================================
   */
 
-  const login = (userdata) => {
+  const login = (userdata: any) => {
     if (!userdata) {
       return;
     }
@@ -133,7 +134,7 @@ export const UserProvider = ({ children }) => {
         );
       }
 
-    } catch (error) {
+    } catch (error: any) {
 
       console.error(
         "Google Sign-In Error:",
@@ -193,7 +194,7 @@ export const UserProvider = ({ children }) => {
 
         }
 
-      } catch (error) {
+      } catch (error: any) {
 
         console.error(
           "LOCAL STORAGE ERROR:",
@@ -218,7 +219,7 @@ export const UserProvider = ({ children }) => {
     const unsubscribe =
       onAuthStateChanged(
         auth,
-        async (firebaseuser) => {
+        async (firebaseuser: any) => {
 
           console.log(
             "FIREBASE AUTH STATE:",
@@ -274,7 +275,7 @@ export const UserProvider = ({ children }) => {
 
               }
 
-            } catch (error) {
+            } catch (error: any) {
 
               console.error(
                 "SESSION RESTORE ERROR:",
