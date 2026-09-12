@@ -24,6 +24,9 @@ interface User {
   name?: string;
   email?: string;
   image?: string;
+  channelname?: string;
+  channelId?: string;
+  hasChannel?: boolean;
 }
 
 interface UserContextType {
